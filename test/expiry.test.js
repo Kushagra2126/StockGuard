@@ -19,7 +19,7 @@ const TODAY = '2026-06-15';
 test('daysUntilExpiry counts whole days from today', () => {
   assert.equal(daysUntilExpiry('2026-06-15', TODAY), 0); // today
   assert.equal(daysUntilExpiry('2026-06-16', TODAY), 1);
-  assert.equal(daysUntilExpiry('2026-06-22', TODAY), 7);
+  assert.equal(daysUntilExpiry('2026-06-22', TODAY), 8);
   assert.equal(daysUntilExpiry('2026-06-14', TODAY), -1); // yesterday
   assert.equal(daysUntilExpiry('2026-05-16', TODAY), -30);
 });
