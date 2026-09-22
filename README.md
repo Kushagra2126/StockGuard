@@ -5,9 +5,9 @@ keep track of what it has in stock and what is about to expire. The server build
 every page from live data, and every change goes through Git, an automated
 CI/CD pipeline and a Docker-based deployment.
 
-- **Live application:** `<paste your Render URL here>`
-- **Repository:** `<paste your GitHub URL here>`
-- **Pipeline runs:** `<repo URL>/actions`
+- **Live application:** `https://stockguard-81qe.onrender.com`
+- **Repository:** `https://github.com/Kushagra2126/StockGuard`
+- **Pipeline runs:** `https://github.com/Kushagra2126/StockGuard/actions`
 
 ## Features
 
