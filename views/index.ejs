@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StockGuard - Inventory &amp; Expiry Intelligence</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap masthead__inner">
+      <div>
+        <h1>StockGuard</h1>
+        <p>Know what is on the shelf, and what is about to leave it.</p>
+      </div>
+      <p class="masthead__date">Today: <time datetime="<%= today %>"><%= today %></time></p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section aria-labelledby="dash-title">
+      <h2 id="dash-title" class="visually-hidden">Dashboard</h2>
+      <dl class="stats">
+        <div class="stat">
+          <dt>Total products</dt>
+          <dd id="stat-total"><%= stats.totalProducts %></dd>
+        </div>
+        <div class="stat stat--warn <%= stats.expiringThisWeek > 0 ? 'is-active' : '' %>">
+          <dt>Expiring this week</dt>
+          <dd id="stat-expiring"><%= stats.expiringThisWeek %></dd>
+        </div>
+        <div class="stat stat--stock <%= stats.outOfStock > 0 ? 'is-active' : '' %>">
+          <dt>Out of stock</dt>
+          <dd id="stat-out"><%= stats.outOfStock %></dd>
+        </div>
+        <div class="stat stat--danger <%= stats.expired > 0 ? 'is-active' : '' %>">
+          <dt>Expired</dt>
+          <dd id="stat-expired"><%= stats.expired %></dd>
+        </div>
+      </dl>
+    </section>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="add-title">
+        <h2 id="add-title">Add a product</h2>
+
+        <% if (added) { %>
+          <p class="notice notice--ok" role="status">Product added to inventory.</p>
+        <% } %>
+        <% if (Object.keys(errors).length > 0) { %>
+          <p class="notice notice--error" role="alert">Please fix the highlighted fields and submit again.</p>
+        <% } %>
+
+        <form method="POST" action="/products" novalidate>
+          <div class="field <%= errors.name ? 'has-error' : '' %>">
+            <label for="name">Product name</label>
+            <input id="name" name="name" maxlength="100" required value="<%= form.name || '' %>">
+            <% if (errors.name) { %><p class="field__error"><%= errors.name %></p><% } %>
+          </div>
+
+          <div class="field <%= errors.category ? 'has-error' : '' %>">
+            <label for="category">Category</label>
+            <input id="category" name="category" list="categories" maxlength="50" required value="<%= form.category || '' %>">
+            <datalist id="categories">
+              <option value="Dairy"><option value="Bakery"><option value="Beverages">
+              <option value="Grains"><option value="Pharmacy"><option value="Frozen">
+            </datalist>
+            <% if (errors.category) { %><p class="field__error"><%= errors.category %></p><% } %>
+          </div>
+
+          <div class="field <%= errors.quantity ? 'has-error' : '' %>">
+            <label for="quantity">Quantity in stock</label>
+            <input id="quantity" name="quantity" type="number" min="0" step="1" inputmode="numeric" required value="<%= form.quantity === undefined ? '' : form.quantity %>">
+            <% if (errors.quantity) { %><p class="field__error"><%= errors.quantity %></p><% } %>
+          </div>
+
+          <div class="field-row">
+            <div class="field <%= errors.purchaseDate ? 'has-error' : '' %>">
+              <label for="purchaseDate">Purchase date</label>
+              <input id="purchaseDate" name="purchaseDate" type="date" required value="<%= form.purchaseDate || today %>">
+              <% if (errors.purchaseDate) { %><p class="field__error"><%= errors.purchaseDate %></p><% } %>
+            </div>
+            <div class="field <%= errors.expiryDate ? 'has-error' : '' %>">
+              <label for="expiryDate">Expiry date</label>
+              <input id="expiryDate" name="expiryDate" type="date" required value="<%= form.expiryDate || '' %>">
+              <% if (errors.expiryDate) { %><p class="field__error"><%= errors.expiryDate %></p><% } %>
+            </div>
+          </div>
+
+          <div class="field <%= errors.supplier ? 'has-error' : '' %>">
+            <label for="supplier">Supplier</label>
+            <input id="supplier" name="supplier" maxlength="100" required value="<%= form.supplier || '' %>">
+            <% if (errors.supplier) { %><p class="field__error"><%= errors.supplier %></p><% } %>
+          </div>
+
+          <button type="submit" class="btn">Add product</button>
+        </form>
+      </section>
+
+      <section class="panel panel--table" aria-labelledby="inv-title">
+        <h2 id="inv-title">Inventory <span class="count"><%= products.length %> items, soonest expiry first</span></h2>
+
+        <% if (products.length === 0) { %>
+          <p class="empty">No products yet. Add your first product using the form.</p>
+        <% } else { %>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Product</th>
+                  <th scope="col">Category</th>
+                  <th scope="col" class="num">Qty</th>
+                  <th scope="col">Purchased</th>
+                  <th scope="col">Expires</th>
+                  <th scope="col">Supplier</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% products.forEach(function (p) { %>
+                  <tr class="row row--<%= p.expiryStatus %>">
+                    <th scope="row"><%= p.name %></th>
+                    <td><%= p.category %></td>
+                    <td class="num"><%= p.quantity %></td>
+                    <td><time datetime="<%= p.purchaseDate %>"><%= p.purchaseDate %></time></td>
+                    <td>
+                      <time datetime="<%= p.expiryDate %>"><%= p.expiryDate %></time>
+                      <span class="days"><%= describeExpiry(p.daysUntilExpiry) %></span>
+                    </td>
+                    <td><%= p.supplier %></td>
+                    <td>
+                      <div class="badges">
+                      <% if (p.expiryStatus === 'expired') { %>
+                        <span class="badge badge--expired">&#9888; Expired</span>
+                      <% } else if (p.expiryStatus === 'expiring-soon') { %>
+                        <span class="badge badge--soon">Expiring soon</span>
+                      <% } else { %>
+                        <span class="badge badge--fresh">Fresh</span>
+                      <% } %>
+                      <% if (p.outOfStock) { %><span class="badge badge--out">Out of stock</span><% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span>StockGuard</span>
+      <span>commit <code id="commit"><%= commit %></code></span>
+    </div>
+  </footer>
+</body>
+</html>
